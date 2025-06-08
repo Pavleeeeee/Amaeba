@@ -28,13 +28,13 @@ class Individual extends Object:
 	func getScore(score):
 		self.score = score
 		print(self.score)
-		printerr("got score")
+		print("got score")
 		if score > self.bestScore:
 			self.bestScore = score
 		self.gotScore.emit(self)
 
 func shallowCopy(ind):
-	var new_Ind = Individual.new(ind.genes.duplicate(), ind.name + "I")
+	var new_Ind = Individual.new(ind.genes.duplicate(), ind.name)
 	new_Ind.bestScore = ind.bestScore
 	return new_Ind
 
@@ -44,7 +44,7 @@ func Ind_got_score(ind):
 		if i.score < 0:
 			count += 1
 	if count == 0:
-		printerr("done scoring")
+		print("done scoring")
 		newGeneration()
 
 func select(population):
@@ -86,9 +86,26 @@ func mutate(population):
 func newGeneration():
 	var population = []
 	Individuals.sort_custom(func(ind1, ind2): return ind1.score > ind2.score)
-	for i in Individuals:
-		population.append(shallowCopy(i))
-	population = mutate(cross(select(population)))
+
+	var elite_count = 4
+	var total_count = len(subViews)
+
+	for i in range(elite_count):
+		population.append(shallowCopy(Individuals[i]))
+
+	var selected = select(Individuals)
+	var children = cross(selected)
+	var mutated = mutate(children)
+
+	var needed = total_count - elite_count
+
+	for i in range(needed):
+		var ind = mutated[i]
+		ind.name = str(numberOfIndividuals)
+		numberOfIndividuals += 1
+		ind.bestScore = 0
+		population.append(ind)
+
 	reset(population)
 
 func reset(population):
