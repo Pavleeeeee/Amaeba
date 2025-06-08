@@ -5,14 +5,12 @@ extends Node2D
 
 var subViews = []
 var numberOfIndividuals = 0
-var generation = 0
 
 func createRandom():
 	var reflexMatrix = []
 	for i in range(16):
 		reflexMatrix.append(randf() - 0.5)
 	return reflexMatrix
-
 
 class Individual extends Object:
 	var name = ""
@@ -28,30 +26,29 @@ class Individual extends Object:
 		self.name = name
 
 	func getScore(score):
-		if score == null:
-			score = 0
 		self.score = score
-		print("Score for ", name, ": ", score)
+		print(self.score)
+		printerr("got score")
 		if score > self.bestScore:
 			self.bestScore = score
 		self.gotScore.emit(self)
-
 
 func shallowCopy(ind):
 	var new_Ind = Individual.new(ind.genes.duplicate(), ind.name + "I")
 	new_Ind.bestScore = ind.bestScore
 	return new_Ind
 
-
 func Ind_got_score(ind):
+	var count = 0
 	for i in Individuals:
 		if i.score < 0:
-			return
-	printerr("Done scoring")
-	newGeneration()
+			count += 1
+	if count == 0:
+		printerr("done scoring")
+		newGeneration()
 
 func select(population):
-	population.sort_custom(func(a, b): return a.score > b.score)
+	population.sort_custom(func(ind1, ind2): return ind1.score > ind2.score)
 	var chosen = []
 	for i in range(int(len(population) / 2)):
 		chosen.append(population[i])
@@ -66,7 +63,8 @@ func cross(population):
 		var child1 = []
 		var child2 = []
 		for i in range(16):
-			if randf() <= 0.5:
+			var odabir = randf()
+			if odabir <= 0.5:
 				child1.append(parent1.genes[i])
 				child2.append(parent2.genes[i])
 			else:
@@ -79,25 +77,19 @@ func cross(population):
 	return children
 
 func mutate(population):
-	for i in range(len(population)):
-		if randf() < 0.1:  # 10% šanse da se mutira
-			var index = randi_range(0, 15)
-			population[i].genes[index] = randf() - 0.5
-			population[i].name += "M"
+	var mutated = population[randi_range(0, len(population) - 1)]
+	var index = randi_range(0, 15)
+	mutated.genes[index] = randf() - 0.5
+	mutated.name += "M"
 	return population
 
 func newGeneration():
-	generation += 1
-	print("Generacija: ", generation)
-
 	var population = []
 	Individuals.sort_custom(func(ind1, ind2): return ind1.score > ind2.score)
 	for i in Individuals:
 		population.append(shallowCopy(i))
-
 	population = mutate(cross(select(population)))
 	reset(population)
-
 
 func reset(population):
 	for v in subViews:
@@ -105,13 +97,11 @@ func reset(population):
 			v.remove_child(n)
 			n.queue_free()
 	Individuals = []
-
 	for i in range(len(subViews)):
 		var ms = MainScene.instantiate()
 		var ind = population[i]
 		ind.representation = ms
 		Individuals.append(ind)
-
 		ind.gotScore.connect(Ind_got_score)
 		ms.reflexMatrix = ind.genes
 		ms.gameover.connect(ind.getScore)
@@ -125,14 +115,12 @@ func _ready():
 	subViews = []
 	for g in gridchildren:
 		subViews.append(g.get_child(0))
-
 	var population = []
 	var i = 0
 	for m in subViews:
 		population.append(Individual.new(createRandom(), "{" + str(i) + "}"))
 		i += 1
 		numberOfIndividuals += 1
-
 	reset(population)
 
 func _process(delta):
