@@ -135,7 +135,7 @@ func _ready():
 	var population = []
 	var i = 0
 	for m in subViews:
-		population.append(Individual.new(createRandom(), "{" + str(i) + "}"))
+		population.append(Individual.new(createRandom(), str(i)))
 		i += 1
 		numberOfIndividuals += 1
 	reset(population)
